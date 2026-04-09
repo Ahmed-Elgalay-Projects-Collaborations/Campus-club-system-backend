@@ -7,6 +7,6 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 4000 4001 4002 4003 4004 4005
+EXPOSE 4000
 
-CMD ["npm", "run", "start:all"]
+CMD ["npm", "run", "start"]

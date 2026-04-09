@@ -1,56 +1,49 @@
-# Campus Club Backend (SOA)
+# Campus Club Backend (Monolith)
 
-Backend implementation for a single-club Campus Club Management System using practical service-oriented architecture (SOA).
+Backend implementation for a single-club Campus Club Management System using a monolithic Node.js + Express architecture.
 
 ## Architecture
 
-This repository was refactored from an incomplete monolithic scaffold into separate services with clear boundaries:
+This repository now runs as a single deployable backend process:
 
-- `api-gateway`: single entry point for frontend clients
-- `auth-service`: registration, login, JWT, admin approval, profile management, member listing
-- `event-service`: event CRUD, event status/open state, capacity/seat operations
-- `rsvp-service`: RSVP creation/cancellation, attendee listing, one-RSVP-per-user-per-event enforcement
-- `announcement-service`: announcement CRUD
-- `gallery-service`: gallery photo CRUD with URL + optional Cloudinary upload
-- `shared`: reusable middleware, validation, auth helpers, db connector, utils, event bus
+- `src/app.js`: monolith HTTP app
+- `src/server.js`: monolith bootstrap (DB + default admin seed + server startup)
+- `src/models/*`: mongoose models
+- `src/controllers/*`: request handlers
+- `src/services/*`: business logic
+- `src/routes/*`: route definitions
+- `src/validators/*`: request validators
+- `src/middlewares/*`, `src/utils/*`: shared runtime utilities
 
-Why this structure is better:
+### Request Flow
 
-- each service owns its own model/domain logic
-- easier maintenance and testing by feature boundary
-- gateway keeps frontend integration simple
-- inter-service calls are explicit (REST + optional domain events)
+All client traffic goes directly to one app:
+
+`/api/v1/*` -> monolith router -> feature modules -> MongoDB
+
+There is no runtime API gateway proxy hop and no service-to-service network deployment requirement.
 
 ## Folder Structure
 
 ```text
 campus-club-backend/
-  api-gateway/
-    src/
-      app.js
-      server.js
-  services/
-    auth-service/src/
-    event-service/src/
-    rsvp-service/src/
-    announcement-service/src/
-    gallery-service/src/
-  shared/
-    config/
+  src/
+    app.js
+    server.js
     constants/
+    controllers/
     db/
-    events/
     middlewares/
+    models/
+    routes/
+    services/
     utils/
     validation/
-  scripts/
-    start-all.js
+    validators/
   docker-compose.yml
   docker-compose.prod.yml
   .env.example
 ```
-
-> Existing old `src/` monolith scaffold is still in the repo as legacy/unmigrated material and is not used by the new runtime.
 
 ## Tech Stack
 
@@ -61,8 +54,7 @@ campus-club-backend/
 - `bcryptjs`
 - `multer` (image upload handling)
 - Cloudinary (optional)
-- RabbitMQ integration hook via `amqplib` (optional)
-- REST APIs + internal service REST calls
+- REST APIs
 
 ## Core Business Rules Implemented
 
@@ -78,15 +70,12 @@ campus-club-backend/
   - event automatically closes when capacity reached
 - Admin-only controls:
   - user approval/rejection and member listing
-  - member listing includes `emailVerified` and `emailVerifiedAt`
   - event CRUD
   - attendees per event
   - announcement CRUD
   - gallery CRUD
 
-## Development Run (Docker Only)
-
-Development is run only through Docker Compose in this project.
+## Development Run (Docker)
 
 1. Create development env file:
 
@@ -100,17 +89,17 @@ cp .env.example .env.development
 docker compose up --build
 ```
 
-Gateway base URL:
+Base URL:
 
 ```text
 http://localhost:4000/api/v1
 ```
 
-By default, development Docker Compose starts these infrastructure containers:
+The development compose includes:
 
-- `mongo` (MongoDB): local database dependency for all services with isolated, repeatable data setup.
-- `rabbitmq` (RabbitMQ + management UI): local async messaging backbone for domain events between services.
-- `mailhog` (SMTP capture + web UI): catches outgoing emails safely during development, so no real mailbox/provider is needed.
+- `mongo` (MongoDB)
+- `mailhog` (SMTP capture + web UI)
+- `backend` (single monolith API container)
 
 MailHog details:
 
@@ -118,18 +107,17 @@ MailHog details:
 - SMTP port: `1025`
 - Web inbox UI: `http://localhost:8025`
 
-This development compose uses bind mounts + `nodemon`, so code changes in:
-- `api-gateway/src`
-- `services/*/src`
-- `shared/*`
-
-are auto-reloaded inside containers.
-
-If containers were created before these dev settings, recreate them once:
+## Local Run (without Docker)
 
 ```bash
-docker compose down -v
-docker compose up --build
+npm install
+npm run dev
+```
+
+Production-style local run:
+
+```bash
+npm run start
 ```
 
 ## Production (Optional)
@@ -147,7 +135,8 @@ Required:
 
 Recommended:
 
-- `SERVICE_AUTH_KEY` (protects internal service endpoints)
+- `MONGO_DB_NAME`
+- `SERVICE_AUTH_KEY`
 - `DEFAULT_ADMIN_EMAIL`
 - `DEFAULT_ADMIN_PASSWORD`
 - `DEFAULT_ADMIN_NAME`
@@ -159,29 +148,14 @@ Recommended:
 
 Optional:
 
-- `AMQP_URL`, `AMQP_EXCHANGE` for RabbitMQ domain events
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` for file uploads
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` for verification/password-reset email delivery
 - `LOG_DIR` (default `./logs`)
 - `ENABLE_FILE_LOGS` (default `true`)
 
-In Docker development, SMTP is pre-wired to MailHog by `docker-compose.yml`, so outgoing verification emails can be viewed at `http://localhost:8025`.
+## API Routes
 
-## Logging
-
-- Runtime errors are logged to `logs/errors.log`
-- Security-related events are logged to `logs/security.log`
-- Security events include:
-  - missing/invalid JWT
-  - forbidden role access attempts
-  - invalid internal service key usage
-  - unknown route probing
-
-Ports and service URLs for development are configurable in `.env.development` (created from `.env.example`).
-
-## API Routes (via Gateway)
-
-### Auth Service
+### Auth
 
 - `POST /auth/register`
 - `POST /auth/login`
@@ -199,29 +173,29 @@ Ports and service URLs for development are configurable in `.env.development` (c
 - `PATCH /admin/users/:id/reject`
 - `POST /admin/users/import-csv` (multipart form-data file field: `file`)
 
-### Event Service
+### Events
 
 - `POST /events`
 - `GET /events`
-- `GET /events/:id` (for admin, includes `attendees` list)
+- `GET /events/:id`
 - `PUT /events/:id`
 - `DELETE /events/:id`
 
-### RSVP Service
+### RSVP
 
 - `POST /rsvps`
 - `DELETE /rsvps/:eventId`
 - `GET /rsvps/me`
 - `GET /events/:eventId/attendees`
 
-### Announcement Service
+### Announcements
 
 - `POST /announcements`
 - `GET /announcements`
 - `PUT /announcements/:id`
 - `DELETE /announcements/:id`
 
-### Gallery Service
+### Gallery
 
 - `POST /gallery`
 - `GET /gallery`
@@ -230,54 +204,18 @@ Ports and service URLs for development are configurable in `.env.development` (c
 
 ## Postman
 
-Import this collection file:
+Import:
 
 - `docs/postman/Campus-Club-Backend-SOA.postman_collection.json`
 
-Cloudinary file-upload requests are included in the collection as:
+Sample CSV:
 
-- `Update My Profile Image (File Upload - Cloudinary)`
-- `Add Gallery Photo (File Upload - Cloudinary)`
-- `Forgot Password`
-- `Reset Password`
-- `Request Email Verification`
-- `Confirm Email Verification`
+- `docs/postman/sample-members-import.csv`
 
-For file upload in Postman use `form-data`:
-
-- Profile image endpoint `PUT /users/me/profile-image`: `image` (type `File`)
-- Gallery endpoint `POST /gallery`: `title` (text), `description` (text), `date` (text ISO date), `image` (type `File`)
-- Member import endpoint `POST /admin/users/import-csv`: `file` (type `File`, `.csv`)
-- Sample CSV file: `docs/postman/sample-members-import.csv`
-
-CSV import rules:
-
-- Admin-only route.
-- CSV headers must include `email` and one of: `displayName`, `display_name`, `name`, `full_name`.
-- Imported members are created/updated as:
-  - `role: user`
-  - `status: approved`
-  - `emailVerified: true`
-
-## Assumptions
-
-- Single club scope, so no multi-club entities included
-- Only two roles (`admin`, `user`)
-- Auth tokens are role/status claims from login time
-- Profile/gallery image upload supports:
-  - direct `imageUrl`, always
-  - file upload when Cloudinary is configured
+Default scripts and Docker flows target the monolith runtime in `src/server.js`.
 
 ## License and Attribution
 
 - Copyright (C) 2026 Ahmed Elgalaly
 - Licensed under GNU General Public License v3.0 only (`GPL-3.0-only`)
 - Repository owner and primary author: Ahmed Elgalaly (`https://github.com/ahmedelgalaly`)
-
-## Optional Future Work
-
-- Add integration/unit tests per service
-- Add rate limiting and request logging
-- Add refresh token flow and token revocation
-- Add centralized observability/tracing
-- Add async consumers to react to RabbitMQ events
