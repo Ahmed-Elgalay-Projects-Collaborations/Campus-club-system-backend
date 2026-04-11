@@ -2,8 +2,9 @@ const ApiError = require("../utils/ApiError");
 const { verifyAccessToken } = require("../utils/jwt");
 const { ROLES, USER_STATUS } = require("../constants/roles");
 const logger = require("../utils/logger");
+const User = require("../models/user.model");
 
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -14,16 +15,42 @@ const authenticate = (req, res, next) => {
   }
 
   const token = authHeader.split(" ")[1];
+  let tokenPayload;
 
   try {
-    req.user = verifyAccessToken(token);
-    return next();
+    tokenPayload = verifyAccessToken(token);
   } catch (error) {
     logger.security("Invalid or expired bearer token", {
       request: logger.getRequestMeta(req),
       reason: error.message,
     });
     return next(new ApiError(401, "Unauthorized: invalid or expired token."));
+  }
+
+  try {
+    const user = await User.findById(tokenPayload.userId)
+      .select("_id email displayName role status")
+      .lean();
+
+    if (!user) {
+      logger.security("Bearer token references non-existing user", {
+        request: logger.getRequestMeta(req),
+        tokenUserId: tokenPayload.userId,
+      });
+      return next(new ApiError(401, "Unauthorized: user no longer exists."));
+    }
+
+    req.user = {
+      userId: user._id.toString(),
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role,
+      status: user.status,
+    };
+
+    return next();
+  } catch (error) {
+    return next(error);
   }
 };
 

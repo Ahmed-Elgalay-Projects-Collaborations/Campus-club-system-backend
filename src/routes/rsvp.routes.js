@@ -9,6 +9,8 @@ const { ROLES } = require("../constants/roles");
 const {
   validateCreateRsvp,
   validateEventIdParam,
+  validateListMyRsvpsQuery,
+  validateListAttendeesQuery,
 } = require("../validators/rsvp.validator");
 
 const router = express.Router();
@@ -34,6 +36,7 @@ router.get(
   authenticate,
   requireApprovedUser,
   authorizeRoles(ROLES.USER),
+  validateListMyRsvpsQuery,
   rsvpController.listMyRsvps
 );
 router.get(
@@ -42,6 +45,7 @@ router.get(
   requireApprovedUser,
   authorizeRoles(ROLES.ADMIN),
   validateEventIdParam,
+  validateListAttendeesQuery,
   rsvpController.listAttendees
 );
 

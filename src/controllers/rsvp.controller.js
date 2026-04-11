@@ -28,13 +28,21 @@ const cancelRsvp = asyncHandler(async (req, res) => {
 });
 
 const listAttendees = asyncHandler(async (req, res) => {
-  const attendees = await rsvpService.listAttendees(req.params.eventId);
-  res.status(200).json({ success: true, data: attendees });
+  const result = await rsvpService.listAttendees(req.params.eventId, req.query);
+  res.status(200).json({
+    success: true,
+    data: result.items,
+    ...(result.pagination ? { meta: { pagination: result.pagination } } : {}),
+  });
 });
 
 const listMyRsvps = asyncHandler(async (req, res) => {
-  const rsvps = await rsvpService.listMyRsvps(req.user.userId);
-  res.status(200).json({ success: true, data: rsvps });
+  const result = await rsvpService.listMyRsvps(req.user.userId, req.query);
+  res.status(200).json({
+    success: true,
+    data: result.items,
+    meta: { pagination: result.pagination },
+  });
 });
 
 module.exports = {

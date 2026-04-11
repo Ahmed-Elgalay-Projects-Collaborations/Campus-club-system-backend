@@ -48,8 +48,12 @@ const createPhoto = asyncHandler(async (req, res) => {
 });
 
 const listPhotos = asyncHandler(async (req, res) => {
-  const photos = await galleryService.listPhotos();
-  res.status(200).json({ success: true, data: photos });
+  const result = await galleryService.listPhotos(req.query);
+  res.status(200).json({
+    success: true,
+    data: result.items,
+    meta: { pagination: result.pagination },
+  });
 });
 
 const updatePhoto = asyncHandler(async (req, res) => {

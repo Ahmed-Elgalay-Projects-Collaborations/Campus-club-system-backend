@@ -1,6 +1,7 @@
 const Announcement = require("../models/announcement.model");
 const ApiError = require("../utils/ApiError");
 const { ROLES } = require("../constants/roles");
+const { normalizePagination, buildPaginationMeta } = require("../utils/pagination");
 
 const normalizeAnnouncementPayload = (payload) => {
   const normalizedPayload = { ...payload };
@@ -24,7 +25,7 @@ const createAnnouncement = async (payload, adminUserId) =>
     createdBy: adminUserId,
   });
 
-const listAnnouncements = async (requestUser) => {
+const listAnnouncements = async (requestUser, paginationInput = {}) => {
   const query = {};
 
   if (requestUser?.role !== ROLES.ADMIN) {
@@ -35,7 +36,27 @@ const listAnnouncements = async (requestUser) => {
     ];
   }
 
-  return Announcement.find(query).sort({ pinned: -1, createdAt: -1 });
+  const pagination = normalizePagination(paginationInput, {
+    defaultLimit: 20,
+    maxLimit: 100,
+  });
+
+  const [items, total] = await Promise.all([
+    Announcement.find(query)
+      .sort({ pinned: -1, createdAt: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit),
+    Announcement.countDocuments(query),
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMeta({
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+    }),
+  };
 };
 
 const updateAnnouncement = async (id, payload) => {

@@ -13,9 +13,17 @@ const signAccessToken = (payload) =>
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
 
+const signOtpToken = (payload) =>
+  jwt.sign(payload, getJwtSecret(), {
+    expiresIn: process.env.JWT_OTP_EXPIRES_IN || "10m",
+  });
+
 const verifyAccessToken = (token) => jwt.verify(token, getJwtSecret());
+const verifyOtpToken = (token) => jwt.verify(token, getJwtSecret());
 
 module.exports = {
   signAccessToken,
+  signOtpToken,
   verifyAccessToken,
+  verifyOtpToken,
 };

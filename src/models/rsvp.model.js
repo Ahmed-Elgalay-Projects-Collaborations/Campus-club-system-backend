@@ -3,12 +3,14 @@ const mongoose = require("mongoose");
 const rsvpSchema = new mongoose.Schema(
   {
     eventId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Event",
       required: true,
       index: true,
     },
     userId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
       index: true,
     },

@@ -10,6 +10,7 @@ const { uploadImage } = require("../utils/multer");
 const {
   validateCreatePhoto,
   validateUpdatePhoto,
+  validateListPhotosQuery,
   validatePhotoIdParam,
 } = require("../validators/gallery.validator");
 
@@ -28,6 +29,7 @@ router.get(
   "/gallery",
   authenticate,
   requireApprovedUser,
+  validateListPhotosQuery,
   galleryController.listPhotos
 );
 router.put(

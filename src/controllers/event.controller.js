@@ -14,8 +14,12 @@ const createEvent = asyncHandler(async (req, res) => {
 
 const listEvents = asyncHandler(async (req, res) => {
   const type = req.query.type || "all";
-  const events = await eventService.listEvents(type);
-  res.status(200).json({ success: true, data: events });
+  const result = await eventService.listEvents(type, req.query);
+  res.status(200).json({
+    success: true,
+    data: result.items,
+    meta: { pagination: result.pagination },
+  });
 });
 
 const getEventById = asyncHandler(async (req, res) => {
@@ -25,7 +29,7 @@ const getEventById = asyncHandler(async (req, res) => {
 
   if (req.user?.role === ROLES.ADMIN) {
     const attendees = await rsvpService.listAttendees(req.params.id);
-    eventData.attendees = attendees;
+    eventData.attendees = attendees.items;
   }
 
   res.status(200).json({ success: true, data: eventData });

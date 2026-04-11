@@ -21,7 +21,9 @@ services:
       - "8025:8025"
 
   backend:
-    build: .
+    build:
+      context: .
+      target: development
     command: npm run dev
     env_file:
       - .env.development
@@ -38,6 +40,7 @@ services:
       SMTP_USER: ""
       SMTP_PASS: ""
       SMTP_FROM: Campus Club <no-reply@campusclub.local>
+      ENABLE_DEFAULT_ADMIN_SEED: "true"
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "1000"
     depends_on:

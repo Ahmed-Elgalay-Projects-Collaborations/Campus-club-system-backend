@@ -1,5 +1,8 @@
 const Event = require("../models/event.model");
+const RSVP = require("../models/rsvp.model");
 const ApiError = require("../utils/ApiError");
+const { normalizePagination, buildPaginationMeta } = require("../utils/pagination");
+const { runWithTransactionFallback } = require("../utils/transaction");
 
 const now = () => new Date();
 
@@ -18,7 +21,7 @@ const createEvent = async (payload, adminUserId) => {
   return event;
 };
 
-const listEvents = async (type = "all") => {
+const listEvents = async (type = "all", paginationInput = {}) => {
   const query = {};
   const currentDate = now();
 
@@ -29,7 +32,24 @@ const listEvents = async (type = "all") => {
   }
 
   const sort = type === "past" ? { date: -1 } : { date: 1 };
-  return Event.find(query).sort(sort);
+  const pagination = normalizePagination(paginationInput, {
+    defaultLimit: 20,
+    maxLimit: 100,
+  });
+
+  const [items, total] = await Promise.all([
+    Event.find(query).sort(sort).skip(pagination.skip).limit(pagination.limit),
+    Event.countDocuments(query),
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMeta({
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+    }),
+  };
 };
 
 const getEventById = async (eventId) => {
@@ -70,13 +90,21 @@ const updateEvent = async (eventId, payload) => {
 };
 
 const deleteEvent = async (eventId) => {
-  const deleted = await Event.findByIdAndDelete(eventId);
-  if (!deleted) {
-    throw new ApiError(404, "Event not found.");
-  }
+  await runWithTransactionFallback(async (session) => {
+    const findOptions = session ? { session } : {};
+    const existing = await Event.findById(eventId, null, findOptions);
+    if (!existing) {
+      throw new ApiError(404, "Event not found.");
+    }
+
+    const writeOptions = session ? { session } : {};
+    await RSVP.deleteMany({ eventId }, writeOptions);
+    await Event.findByIdAndDelete(eventId, writeOptions);
+  });
 };
 
-const reserveSeat = async (eventId) => {
+const reserveSeat = async (eventId, options = {}) => {
+  const session = options.session || null;
   const currentDate = now();
   const event = await Event.findOneAndUpdate(
     {
@@ -86,11 +114,11 @@ const reserveSeat = async (eventId) => {
       $expr: { $lt: ["$attendeeCount", "$capacity"] },
     },
     { $inc: { attendeeCount: 1 } },
-    { new: true }
+    { new: true, ...(session ? { session } : {}) }
   );
 
   if (!event) {
-    const existing = await Event.findById(eventId);
+    const existing = await Event.findById(eventId, null, session ? { session } : {});
     if (!existing) {
       throw new ApiError(404, "Event not found.");
     }
@@ -105,17 +133,18 @@ const reserveSeat = async (eventId) => {
 
   if (event.attendeeCount >= event.capacity && event.isOpen) {
     event.isOpen = false;
-    await event.save();
+    await event.save(session ? { session } : {});
   }
 
   return event;
 };
 
-const releaseSeat = async (eventId) => {
+const releaseSeat = async (eventId, options = {}) => {
+  const session = options.session || null;
   const event = await Event.findOneAndUpdate(
     { _id: eventId, attendeeCount: { $gt: 0 } },
     { $inc: { attendeeCount: -1 } },
-    { new: true }
+    { new: true, ...(session ? { session } : {}) }
   );
 
   if (!event) {
@@ -123,7 +152,7 @@ const releaseSeat = async (eventId) => {
   }
 
   event.isOpen = computeOpenState(event.date, event.attendeeCount, event.capacity);
-  await event.save();
+  await event.save(session ? { session } : {});
 
   return event;
 };

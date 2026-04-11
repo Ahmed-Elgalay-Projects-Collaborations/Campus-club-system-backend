@@ -35,6 +35,28 @@ const validateUpdateAnnouncement = validate({
   },
 });
 
+const validateListAnnouncementsQuery = validate(
+  {
+    page: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "page must be a positive integer.",
+    },
+    limit: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "limit must be a positive integer.",
+    },
+  },
+  "query"
+);
+
 const validateAnnouncementIdParam = validate(
   {
     id: {
@@ -49,5 +71,6 @@ const validateAnnouncementIdParam = validate(
 module.exports = {
   validateCreateAnnouncement,
   validateUpdateAnnouncement,
+  validateListAnnouncementsQuery,
   validateAnnouncementIdParam,
 };

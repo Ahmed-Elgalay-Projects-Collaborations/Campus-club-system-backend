@@ -74,6 +74,7 @@ campus-club-backend/
   - attendees per event
   - announcement CRUD
   - gallery CRUD
+- OTP login is optional per account (`otpEnabled`) and defaults to off for all users/admins
 
 ## Development Run (Docker)
 
@@ -86,6 +87,8 @@ Copy `.env.example` to `.env.development` and set at least:
 - `JWT_SECRET` to a real secret
 
 If you're using Atlas, make sure your current IP is allowed in Atlas Network Access before starting the app.
+
+If you want automatic local admin bootstrap, set `ENABLE_DEFAULT_ADMIN_SEED=true` in `.env.development`.
 
 2. Start development stack:
 
@@ -144,15 +147,17 @@ Required:
 Recommended:
 
 - `MONGO_DB_NAME`
-- `SERVICE_AUTH_KEY`
 - `DEFAULT_ADMIN_EMAIL`
 - `DEFAULT_ADMIN_PASSWORD`
 - `DEFAULT_ADMIN_NAME`
+- `ENABLE_DEFAULT_ADMIN_SEED` (recommended `false` in production)
 - `API_PUBLIC_BASE_URL`
 - `FRONTEND_VERIFY_EMAIL_URL`
 - `EMAIL_VERIFICATION_TOKEN_TTL_MINUTES`
 - `FRONTEND_RESET_PASSWORD_URL`
 - `PASSWORD_RESET_TOKEN_TTL_MINUTES`
+- `JWT_OTP_EXPIRES_IN`
+- `LOGIN_OTP_TTL_MINUTES`
 
 Optional:
 
@@ -160,6 +165,8 @@ Optional:
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` for verification/password-reset email delivery
 - `LOG_DIR` (default `./logs`)
 - `ENABLE_FILE_LOGS` (default `true`)
+- `CORS_ORIGINS` (comma-separated, required in production for browser clients)
+- `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`, `DISABLE_RATE_LIMIT`
 
 ## Data Model Updates
 
@@ -171,10 +178,13 @@ Recent additions:
 
 ## API Routes
 
+List endpoints support pagination through `?page=<number>&limit=<number>` with sensible defaults.
+
 ### Auth
 
 - `POST /auth/register`
 - `POST /auth/login`
+- `POST /auth/login/otp/verify`
 - `POST /auth/forgot-password`
 - `POST /auth/reset-password`
 - `POST /auth/verify-email/request`
@@ -183,10 +193,12 @@ Recent additions:
 - `GET /users/me`
 - `PUT /users/me`
 - `PUT /users/me/password`
+- `PUT /users/me/otp-settings`
 - `PUT /users/me/profile-image`
 - `GET /admin/users`
 - `PATCH /admin/users/:id/approve`
 - `PATCH /admin/users/:id/reject`
+- `PATCH /admin/users/:id/promote`
 - `POST /admin/users/import-csv` (multipart form-data file field: `file`)
 
 ### Events
@@ -217,6 +229,11 @@ Recent additions:
 - `GET /gallery`
 - `PUT /gallery/:id`
 - `DELETE /gallery/:id`
+
+### Admin Chat
+
+- `POST /admin/chat/messages`
+- `GET /admin/chat/messages`
 
 ## Postman
 

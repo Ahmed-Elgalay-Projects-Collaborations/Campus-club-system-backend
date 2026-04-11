@@ -70,6 +70,22 @@ const validateListEventsQuery = validate(
       type: "string",
       enum: ["upcoming", "past", "all"],
     },
+    page: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "page must be a positive integer.",
+    },
+    limit: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "limit must be a positive integer.",
+    },
   },
   "query"
 );

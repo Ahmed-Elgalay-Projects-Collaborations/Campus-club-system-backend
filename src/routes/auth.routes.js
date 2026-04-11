@@ -9,6 +9,7 @@ const { uploadImage } = require("../utils/multer");
 const {
   validateRegister,
   validateLogin,
+  validateLoginOtpVerify,
   validateEmailVerificationRequest,
   validateEmailVerificationConfirm,
   validateEmailVerificationConfirmQuery,
@@ -16,6 +17,7 @@ const {
   validateResetPassword,
   validateProfileUpdate,
   validatePasswordUpdate,
+  validateOtpSettings,
   validateAdminUserFilters,
   validateUserIdParam,
 } = require("../validators/auth.validator");
@@ -29,6 +31,11 @@ const uploadCsv = multer({
 
 router.post("/auth/register", validateRegister, authController.register);
 router.post("/auth/login", validateLogin, authController.login);
+router.post(
+  "/auth/login/otp/verify",
+  validateLoginOtpVerify,
+  authController.verifyLoginOtp
+);
 router.post(
   "/auth/verify-email/request",
   validateEmailVerificationRequest,
@@ -62,6 +69,12 @@ router.put(
   authenticate,
   validatePasswordUpdate,
   authController.updateMyPassword
+);
+router.put(
+  "/users/me/otp-settings",
+  authenticate,
+  validateOtpSettings,
+  authController.updateMyOtpSettings
 );
 router.put(
   "/users/me/profile-image",

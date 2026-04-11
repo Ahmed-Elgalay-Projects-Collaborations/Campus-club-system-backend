@@ -32,7 +32,18 @@ const writeLogFile = (fileName, payload) => {
   if (!ENABLE_FILE_LOGS) return;
   ensureLogDirectory();
   const filePath = path.join(LOG_DIR, fileName);
-  fs.appendFileSync(filePath, `${safeJson(payload)}\n`, "utf8");
+  fs.appendFile(filePath, `${safeJson(payload)}\n`, "utf8", (error) => {
+    if (error) {
+      const fallback = safeJson({
+        timestamp: new Date().toISOString(),
+        level: "error",
+        message: "Failed to write log file asynchronously.",
+        filePath,
+        reason: error.message,
+      });
+      console.error(fallback);
+    }
+  });
 };
 
 const log = (level, message, context = {}) => {

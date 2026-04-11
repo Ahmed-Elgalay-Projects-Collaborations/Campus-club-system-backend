@@ -31,6 +31,16 @@ const register = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
   const payload = await authService.login(req.body);
+  const requiresOtp = Boolean(payload?.requiresOtp);
+  res.status(200).json({
+    success: true,
+    message: requiresOtp ? "OTP verification required." : "Login successful.",
+    data: payload,
+  });
+});
+
+const verifyLoginOtp = asyncHandler(async (req, res) => {
+  const payload = await authService.verifyLoginOtp(req.body);
   res.status(200).json({
     success: true,
     message: "Login successful.",
@@ -125,6 +135,15 @@ const updateMyPassword = asyncHandler(async (req, res) => {
   });
 });
 
+const updateMyOtpSettings = asyncHandler(async (req, res) => {
+  const user = await authService.updateOtpSettings(req.user.userId, req.body);
+  res.status(200).json({
+    success: true,
+    message: `OTP ${user.otpEnabled ? "enabled" : "disabled"} successfully.`,
+    data: user,
+  });
+});
+
 const updateMyProfileImage = asyncHandler(async (req, res) => {
   let imageUrl = req.body.imageUrl;
   let publicId = null;
@@ -161,8 +180,12 @@ const updateMyProfileImage = asyncHandler(async (req, res) => {
 });
 
 const listUsers = asyncHandler(async (req, res) => {
-  const users = await authService.listUsers(req.query);
-  res.status(200).json({ success: true, data: users });
+  const result = await authService.listUsers(req.query);
+  res.status(200).json({
+    success: true,
+    data: result.items,
+    meta: { pagination: result.pagination },
+  });
 });
 
 const approveUser = asyncHandler(async (req, res) => {
@@ -226,6 +249,7 @@ const importMembersCsv = asyncHandler(async (req, res) => {
 module.exports = {
   register,
   login,
+  verifyLoginOtp,
   requestEmailVerification,
   forgotPassword,
   resetPassword,
@@ -234,6 +258,7 @@ module.exports = {
   getMyProfile,
   updateMyProfile,
   updateMyPassword,
+  updateMyOtpSettings,
   updateMyProfileImage,
   listUsers,
   approveUser,

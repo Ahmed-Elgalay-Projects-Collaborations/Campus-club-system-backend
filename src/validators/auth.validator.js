@@ -49,6 +49,15 @@ const validateLogin = validate({
   password: { required: true, type: "string", minLength: 1 },
 });
 
+const validateLoginOtpVerify = validate({
+  otpToken: { required: true, type: "string", minLength: 20 },
+  otpCode: {
+    required: true,
+    type: "string",
+    pattern: /^\d{6}$/,
+  },
+});
+
 const validateEmailVerificationRequest = validate({
   email: {
     required: true,
@@ -110,10 +119,30 @@ const validatePasswordUpdate = validate({
   },
 });
 
+const validateOtpSettings = validate({
+  enabled: { required: true, type: "boolean" },
+});
+
 const validateAdminUserFilters = validate(
   {
     status: { required: false, type: "string", enum: Object.values(USER_STATUS) },
-    role: { required: false, type: "string", enum: Object.values(ROLES) },
+    role: { required: false, type: "string", enum: [ROLES.USER] },
+    page: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "page must be a positive integer.",
+    },
+    limit: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "limit must be a positive integer.",
+    },
   },
   "query"
 );
@@ -132,6 +161,7 @@ const validateUserIdParam = validate(
 module.exports = {
   validateRegister,
   validateLogin,
+  validateLoginOtpVerify,
   validateEmailVerificationRequest,
   validateForgotPassword,
   validateResetPassword,
@@ -139,6 +169,7 @@ module.exports = {
   validateEmailVerificationConfirmQuery,
   validateProfileUpdate,
   validatePasswordUpdate,
+  validateOtpSettings,
   validateAdminUserFilters,
   validateUserIdParam,
 };

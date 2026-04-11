@@ -27,8 +27,10 @@ const galleryPhotoSchema = new mongoose.Schema(
       default: null,
     },
     uploadedBy: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
+      index: true,
     },
   },
   {

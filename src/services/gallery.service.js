@@ -3,6 +3,7 @@ const ApiError = require("../utils/ApiError");
 const {
   deleteCloudinaryImage,
 } = require("../utils/cloudinary");
+const { normalizePagination, buildPaginationMeta } = require("../utils/pagination");
 
 const createPhoto = async (payload, adminUserId) => {
   const photo = await GalleryPhoto.create({
@@ -14,7 +15,29 @@ const createPhoto = async (payload, adminUserId) => {
   return photo;
 };
 
-const listPhotos = async () => GalleryPhoto.find().sort({ date: -1, createdAt: -1 });
+const listPhotos = async (paginationInput = {}) => {
+  const pagination = normalizePagination(paginationInput, {
+    defaultLimit: 20,
+    maxLimit: 100,
+  });
+
+  const [items, total] = await Promise.all([
+    GalleryPhoto.find()
+      .sort({ date: -1, createdAt: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit),
+    GalleryPhoto.countDocuments({}),
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMeta({
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+    }),
+  };
+};
 
 const updatePhoto = async (photoId, payload) => {
   const photo = await GalleryPhoto.findById(photoId);

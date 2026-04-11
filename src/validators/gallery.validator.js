@@ -27,6 +27,28 @@ const validateUpdatePhoto = validate({
   publicId: { required: false, type: "string", minLength: 1 },
 });
 
+const validateListPhotosQuery = validate(
+  {
+    page: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "page must be a positive integer.",
+    },
+    limit: {
+      required: false,
+      type: "string",
+      custom: (value) =>
+        /^\d+$/.test(value) && Number.parseInt(value, 10) > 0
+          ? null
+          : "limit must be a positive integer.",
+    },
+  },
+  "query"
+);
+
 const validatePhotoIdParam = validate(
   {
     id: {
@@ -41,5 +63,6 @@ const validatePhotoIdParam = validate(
 module.exports = {
   validateCreatePhoto,
   validateUpdatePhoto,
+  validateListPhotosQuery,
   validatePhotoIdParam,
 };

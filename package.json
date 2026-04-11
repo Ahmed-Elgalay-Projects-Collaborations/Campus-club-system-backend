@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "nodemon -L --watch src --ext js,json src/server.js",
     "start": "node src/server.js",
-    "start:all": "node src/server.js"
+    "start:all": "node src/server.js",
+    "test": "jest --runInBand",
+    "test:unit": "jest --runInBand --testPathPatterns=tests/services/.*/unit/",
+    "test:functional": "jest --runInBand --testPathPatterns=tests/services/.*/functional/"
   },
   "keywords": [],
   "author": "Ahmed Elgalaly",
@@ -29,6 +32,8 @@
     "nodemailer": "^8.0.4"
   },
   "devDependencies": {
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.3.0",
     "nodemon": "^3.1.14"
   }
 }

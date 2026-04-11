@@ -28,7 +28,7 @@ const createMessage = async ({ senderUserId, message }) => {
   const sender = await assertAdminUser(senderUserId);
 
   const chatMessage = await AdminChatMessage.create({
-    senderId: sender._id.toString(),
+    senderId: sender._id,
     senderDisplayName: sender.displayName,
     message: String(message).trim(),
   });

@@ -9,6 +9,7 @@ const { ROLES } = require("../constants/roles");
 const {
   validateCreateAnnouncement,
   validateUpdateAnnouncement,
+  validateListAnnouncementsQuery,
   validateAnnouncementIdParam,
 } = require("../validators/announcement.validator");
 
@@ -26,6 +27,7 @@ router.get(
   "/announcements",
   authenticate,
   requireApprovedUser,
+  validateListAnnouncementsQuery,
   announcementController.listAnnouncements
 );
 router.put(
