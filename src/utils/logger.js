@@ -71,12 +71,18 @@ const error = (message, context = {}) => {
   writeLogFile("errors.log", payload);
 };
 
+const info = (message, context = {}) => {
+  const payload = log("info", message, context);
+  writeLogFile("application.log", payload);
+};
+
 const security = (message, context = {}) => {
   const payload = log("warn", message, context);
   writeLogFile("security.log", payload);
 };
 
 module.exports = {
+  info,
   error,
   security,
   getRequestMeta,

@@ -2,6 +2,7 @@ require("dotenv").config();
 const app = require("./app");
 const connectDatabase = require("./db/connectDatabase");
 const authService = require("./services/auth.service");
+const logger = require("./utils/logger");
 
 const PORT = Number(process.env.MONOLITH_PORT || process.env.PORT || 4000);
 
@@ -14,11 +15,19 @@ const start = async () => {
   await authService.ensureDefaultAdmin();
 
   app.listen(PORT, () => {
-    console.log(`[campus-club-monolith] running on port ${PORT}`);
+    logger.info("HTTP server started", {
+      service: "campus-club-monolith",
+      port: PORT,
+      nodeEnv: process.env.NODE_ENV || "development",
+    });
   });
 };
 
 start().catch((error) => {
-  console.error("[campus-club-monolith] failed to start:", error.message);
+  logger.error("Service failed to start", {
+    service: "campus-club-monolith",
+    reason: error.message,
+    stack: error.stack,
+  });
   process.exit(1);
 });
